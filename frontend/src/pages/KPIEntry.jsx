@@ -1,256 +1,169 @@
 import { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { Calendar, Check, Lock, ChevronRight } from 'lucide-react';
+import EntryModal from '../components/kpi/EntryModal';
+import ResultModal from '../components/kpi/ResultModal';
 
-const KPIEntry = () => {
-  const [step, setStep] = useState(1); // 1: Input, 2: Result, 3: Excellence, 4: Ranking
-  const [metric, setMetric] = useState('0.0');
-  const [lastWeek] = useState('28.0');
-  
-  // Mock targets
-  const target = 28.0;
+const KPIPage = () => {
+  // Mock Data: Past 4 days + Today
+  const [days, setDays] = useState([
+    { id: 1, date: 'Wednesday', fullDate: 'Wed, Oct 23', status: 'locked', score: 28.5, target: 28.0 },
+    { id: 2, date: 'Thursday', fullDate: 'Thu, Oct 24', status: 'locked', score: 29.0, target: 28.0 },
+    { id: 3, date: 'Friday', fullDate: 'Fri, Oct 25', status: 'pending', target: 28.0 }, // MISSED DAY
+    { id: 4, date: 'Saturday', fullDate: 'Sat, Oct 26', status: 'pending', target: 28.0 }, // TODAY
+  ]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setStep(2);
+  const [streak, setStreak] = useState(5); // Mock starting streak
+  const [view, setView] = useState('list'); // 'list', 'entry', 'result'
+  const [currentDay, setCurrentDay] = useState(null);
+
+  const handleDaySelect = (day) => {
+    if (day.status === 'locked') return; // Cannot edit locked days
+    setCurrentDay(day);
+    setView('entry');
   };
 
-  const handleNext = () => {
-    if (step < 4) setStep(step + 1);
-    else setStep(1); // Reset
+  const handleEntryComplete = (status, score) => {
+    // status: 'met' | 'missed'
+    if (status === 'met') {
+      setStreak(s => s + 1);
+      setView('result');
+    } else {
+      setStreak(0); // Reset streak on miss
+      setView('list'); // Or show failure modal? For now back to list or maybe just close
+      // Actually, let's just lock it and go back to list for now if missed, 
+      // or maybe show "Improvement Needed" screen. 
+      // Spec said "Target Missed" is shown in validation. 
+      // Let's assume on "Next" after failure we just go back.
+      handleLockDay(score); 
+    }
   };
 
-  const getStatusColor = (val) => {
-    const num = parseFloat(val);
-    if (val === '0.0') return '#4472C4'; // Blue (Default)
-    if (num >= target) return '#00B050'; // Green (Success)
-    if (num >= target - 2) return '#ED7D31'; // Amber (Warning) (e.g. 26-27.9)
-    return '#FF0000'; // Red (Failure)
+  const handleResultFinish = () => {
+    handleLockDay(currentDay.score || '28.0'); // Use entered score
   };
 
-  const getMessage = (val) => {
-    const num = parseFloat(val);
-    if (val === '0.0') return 'Please Enter Metric';
-    if (num >= target) return 'TARGET ACHIEVED';
-    if (num >= target - 2) return 'NEEDS IMPROVEMENT';
-    return 'Target Missed, Immediate Action Required';
+  const handleLockDay = (finalScore) => {
+    setDays(prev => prev.map(d => 
+      d.id === currentDay.id 
+        ? { ...d, status: 'locked', score: finalScore }
+        : d
+    ));
+    setView('list');
+    setCurrentDay(null);
   };
 
-  // Common Styles
+  // Styles
   const containerStyle = {
-    // minHeight: '100vh', // Handled by layout
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    height: '100%', // Take full height of main area
-    // backgroundColor: '#fff', // Transparent to let layout bg show
+    height: '100%',
     fontFamily: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   };
 
-  const cardStyle = {
-    background: '#F2F6FC', // Very light blueish grey
-    border: '2px solid #5B9BD5',
-    width: '500px',
-    height: '600px',
+  const listCardStyle = {
+    background: 'white',
+    borderRadius: '16px',
     padding: '2rem',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    textAlign: 'center',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-  };
-
-  const headerBoxStyle = {
-    marginBottom: '1rem'
-  };
-
-  const titleStyle = {
-    fontSize: '2rem',
-    fontWeight: '800',
-    margin: '0.5rem 0',
-    color: 'black'
-  };
-
-  const subTitleStyle = {
-    fontSize: '1.2rem',
-    fontWeight: '600',
-    color: '#444'
-  };
-
-  const metricBoxStyle = (bgColor) => ({
-    width: '180px',
-    height: '100px',
-    background: bgColor,
-    color: 'white',
-    fontSize: '3rem',
-    fontWeight: 'bold',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: '1rem auto'
-  });
-
-  const labelStyle = {
-    color: '#4472C4',
-    fontWeight: '700',
-    fontSize: '1.1rem',
-    textTransform: 'uppercase',
-    marginBottom: '5px'
-  };
-
-  const buttonStyle = {
-    padding: '0.5rem 2rem',
-    background: '#A5A5A5',
-    color: 'white',
-    border: 'none',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    alignSelf: 'flex-end',
-    marginTop: 'auto'
+    width: '600px',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
   };
 
   return (
     <div style={containerStyle}>
       
-      {/* View 1 & 2: Data Entry / Result */}
-      {(step === 1 || step === 2) && (
-        <div style={cardStyle}>
-          
-          <div style={headerBoxStyle}>
-            <h3 style={{fontSize: '1.2rem', fontWeight: '700'}}>Drive Thru Metrics:</h3>
-            <h1 style={titleStyle}>SATURDAY</h1> 
-            {/* Hardcoded 7am-10am from screenshot */}
-          </div>
+      {/* VIEW: DAY LIST */}
+      {view === 'list' && (
+        <div style={listCardStyle}>
+          <h2 style={{fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', color: '#0f172a'}}>Daily KPI Entry</h2>
+          <p style={{color: '#64748b', marginBottom: '2rem'}}>Select a day to enter metrics. Previous days must be completed.</p>
 
-          <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-            
-            {/* THIS WEEK */}
-            <div>
-              <div style={labelStyle}>THIS WEEK</div>
-              {step === 1 ? (
-                 <div style={metricBoxStyle(getStatusColor(metric))}>
-                   <input 
-                    autoFocus
-                    value={metric}
-                    onChange={(e) => setMetric(e.target.value)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'white',
-                      fontSize: '3rem',
-                      fontWeight: 'bold',
-                      textAlign: 'center',
-                      width: '100%',
-                      outline: 'none'
-                    }}
-                   />
-                 </div>
-              ) : (
-                <div style={metricBoxStyle(getStatusColor(metric))}>
-                  {metric}
+          <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+            {days.map(day => (
+              <div 
+                key={day.id}
+                onClick={() => handleDaySelect(day)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1.25rem',
+                  borderRadius: '12px',
+                  border: day.status === 'pending' ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                  background: day.status === 'pending' ? '#eff6ff' : '#f8fafc',
+                  cursor: day.status === 'pending' ? 'pointer' : 'default',
+                  opacity: day.status === 'locked' ? 0.7 : 1,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '50%', 
+                    background: day.status === 'locked' ? '#dcfce7' : '#dbeafe',
+                    color: day.status === 'locked' ? '#166534' : '#1e40af',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {day.status === 'locked' ? <Check size={20}/> : <Calendar size={20}/>}
+                  </div>
+                  <div>
+                    <h4 style={{fontWeight: '600', color: '#0f172a', margin: 0}}>{day.date}</h4>
+                    <span style={{fontSize: '0.875rem', color: '#64748b'}}>{day.fullDate}</span>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Message */}
-            <div style={{ color: '#2F5597', fontWeight: '700', fontSize: '1.2rem', minHeight: '3rem' }}>
-              {step === 1 ? 'Please Enter Metric' : getMessage(metric)}
-            </div>
-
-            {/* LAST WEEK */}
-            <div>
-              <div style={{...labelStyle, color: '#2F5597'}}>LAST WEEK</div>
-              <div style={metricBoxStyle('#00B050')}>
-                {lastWeek}
+                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                   {day.status === 'locked' ? (
+                     <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#059669', fontSize: '0.9rem', fontWeight: '600'}}>
+                       <Lock size={16} />
+                       <span>Locked</span>
+                       <span style={{color: '#64748b', fontWeight: '400'}}>({day.score})</span>
+                     </div>
+                   ) : (
+                     <div style={{
+                       padding: '0.5rem 1rem', 
+                       background: '#2563eb', 
+                       color: 'white', 
+                       borderRadius: '8px', 
+                       fontSize: '0.875rem', 
+                       fontWeight: '600',
+                       display: 'flex', alignItems: 'center', gap: '0.5rem'
+                     }}>
+                       Enter Data <ChevronRight size={16}/>
+                     </div>
+                   )}
+                </div>
               </div>
+            ))}
+          </div>
+          
+          <div style={{marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <span style={{color: '#64748b', fontSize: '0.9rem'}}>Current Streak</span>
+            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+               <span style={{fontSize: '1.5rem', fontWeight: '800', color: '#059669'}}>{streak}</span>
+               <span style={{color: '#059669', fontWeight: '600'}}>Days</span>
             </div>
-
           </div>
-
-          {step === 1 ? (
-            <button onClick={handleSubmit} style={buttonStyle}>Submit</button>
-          ) : (
-            <button onClick={handleNext} style={buttonStyle}>Next</button>
-          )}
-
         </div>
       )}
 
-      {/* View 3: Achievement Excellence */}
-      {step === 3 && (
-        <div style={cardStyle}>
-          <div style={headerBoxStyle}>
-            <h3 style={{fontSize: '1.2rem', fontWeight: '700'}}>Achievement</h3>
-            <h1 style={{...titleStyle, fontSize: '3rem'}}>Excellence</h1>
-            <h3 style={{fontSize: '1.5rem', color: '#4472C4', fontWeight: '600'}}>OSAT</h3> {/* Assuming OSAT from screenshot, or Drive Thru */}
-            <h3 style={{fontSize: '1.2rem', color: '#4472C4', fontWeight: '600'}}>KPI Targets met for</h3>
-          </div>
-
-          <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-             <div style={{
-               width: '150px',
-               height: '100px',
-               background: '#00B050',
-               color: 'white',
-               fontSize: '4rem',
-               fontWeight: 'bold',
-               display: 'flex',
-               justifyContent: 'center',
-               alignItems: 'center'
-             }}>
-               5
-             </div>
-             <div style={{textAlign: 'left', color: '#4472C4', fontWeight: '700', fontSize: '1.5rem'}}>
-               Days in a <br/> Row
-             </div>
-          </div>
-
-          <div style={{ margin: '2rem 0', color: '#4472C4', fontSize: '1.5rem', fontWeight: '600' }}>
-            Displayed after 5+ days <br/> of meeting KPIs
-          </div>
-
-          <button onClick={handleNext} style={buttonStyle}>Next</button>
-        </div>
+      {/* VIEW: ENTRY MODAL */}
+      {view === 'entry' && (
+        <EntryModal 
+          day={currentDay} 
+          onSubmit={handleEntryComplete} 
+        />
       )}
 
-      {/* View 4: Ranking */}
-      {step === 4 && (
-        <div style={cardStyle}>
-          <div style={headerBoxStyle}>
-             <h3 style={{fontSize: '1.2rem', fontWeight: '700'}}>Achievement</h3>
-             <h1 style={{...titleStyle, fontSize: '2.5rem'}}>Weekly Ranking</h1>
-             <h3 style={{fontSize: '1.5rem', color: '#4472C4', fontWeight: '600'}}>Our Store is Ranking</h3>
-          </div>
-
-          <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-            <div style={{
-               width: '150px',
-               height: '100px',
-               background: '#00B050',
-               color: 'white',
-               fontSize: '3rem',
-               fontWeight: 'bold',
-               display: 'flex',
-               justifyContent: 'center',
-               alignItems: 'center'
-             }}>
-               #1
-             </div>
-             <div style={{textAlign: 'left', color: '#4472C4', fontWeight: '700', fontSize: '1.5rem'}}>
-               Of X# Stores
-             </div>
-          </div>
-
-          <div style={{ margin: '2rem 0', color: '#4472C4', fontSize: '1.5rem', fontWeight: '600' }}>
-             Top 10 in Region
-          </div>
-
-          <button onClick={handleNext} style={buttonStyle}>Finish</button>
-        </div>
+      {/* VIEW: RESULT MODAL */}
+      {view === 'result' && (
+        <ResultModal 
+          streak={streak} 
+          onFinish={handleResultFinish} 
+        />
       )}
 
     </div>
   );
 };
 
-export default KPIEntry;
+export default KPIPage;
