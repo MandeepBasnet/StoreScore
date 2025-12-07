@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Environment
+.env
+
+# User Specified Ignored Files
+SD-Store Manager Portal-101125-114726 (1).pdf
+StoreScore - Use Case Diagrams May 2025 (1).pdf
+StoreScore_PRD.md
+StoreScore_Tim_Branded_6_Slides (1).pptx
+
+# System
+.DS_Store
+Thumbs.db
