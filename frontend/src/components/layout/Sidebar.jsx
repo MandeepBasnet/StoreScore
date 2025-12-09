@@ -1,5 +1,6 @@
 import { LayoutDashboard, Target, LogOut, Store } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { clearAuth } from '../../utils/auth';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ const Sidebar = () => {
   ];
 
   const handleSignOut = () => {
+    clearAuth();
     navigate('/login');
   };
 

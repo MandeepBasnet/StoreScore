@@ -5,14 +5,15 @@ import Inventory from './pages/Inventory';
 import Performance from './pages/Performance';
 import Login from './pages/Login';
 import KPIEntry from './pages/KPIEntry';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="/kpi" replace />} />
           <Route path="kpi" element={<KPIEntry />} />
         </Route>
       </Routes>

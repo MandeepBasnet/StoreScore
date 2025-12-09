@@ -1,14 +1,50 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { login as loginAPI } from '../api/auth';
+import { saveAuth, clearAuth } from '../utils/auth';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    navigate('/kpi');
+    setError('');
+    
+    if (!username) {
+      setError('Please enter your username.');
+      return;
+    }
+    
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      clearAuth();
+      
+      const data = await loginAPI(username, password);
+      
+      if (!data?.token) {
+        throw new Error('Login succeeded but no token was returned.');
+      }
+      
+      saveAuth(data.token, data.user || null);
+      navigate('/kpi', { replace: true });
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Login failed. Please try again.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -18,9 +54,45 @@ const Login = () => {
       flexDirection: 'column', 
       alignItems: 'center', 
       paddingTop: '10vh',
-      background: 'white', // Explicit white background as per reference
+      background: 'white',
       color: 'black'
     }}>
+      
+      {/* Loading Overlay */}
+      {loading && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem',
+            background: 'white',
+            padding: '2.5rem',
+            borderRadius: '12px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #e5e7eb',
+              borderTop: '4px solid #1e3a8a',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            <p style={{ fontSize: '1rem', color: '#1a1a1a', fontWeight: 500 }}>
+              Logging you in...
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Logo Section */}
       <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
@@ -34,7 +106,7 @@ const Login = () => {
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
-          {/* Email Input */}
+          {/* Username Input */}
           <div style={{ position: 'relative' }}>
             <label style={{ 
               position: 'absolute', 
@@ -44,17 +116,22 @@ const Login = () => {
               fontWeight: 600, 
               color: '#333' 
             }}>
-              Email *
+              Username *
             </label>
             <input 
-              type="email" 
+              type="text" 
               required
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) setError('');
+              }}
               style={{
                 width: '100%',
                 padding: '0.5rem 0',
                 border: 'none',
-                borderBottom: '2px solid black',
-                background: 'transparent',
+                borderBottom: error ? '2px solid #dc2626' : '2px solid black',
+                background: error ? '#fef2f2' : 'transparent',
                 fontSize: '1rem',
                 outline: 'none',
                 marginTop: '10px'
@@ -80,6 +157,11 @@ const Login = () => {
             <input 
               type={showPassword ? "text" : "password"} 
               required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError('');
+              }}
               style={{
                 width: '100%',
                 padding: '0.5rem 0',
@@ -99,6 +181,14 @@ const Login = () => {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <p style={{ fontSize: '0.875rem', color: '#dc2626', marginTop: '-1rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span>⚠️</span>
+              {error}
+            </p>
+          )}
+
           {/* Forgot Password Link */}
           <div style={{ marginTop: '-1rem' }}>
              <a href="#" style={{ fontSize: '0.875rem', fontWeight: 700, color: 'black', textDecoration: 'none' }}>Password Help?</a>
@@ -107,24 +197,33 @@ const Login = () => {
           {/* Login Button */}
           <button 
             type="submit" 
+            disabled={loading}
             style={{ 
               width: '100%', 
               padding: '1rem', 
-              background: 'black', 
+              background: loading ? '#9ca3af' : 'black', 
               color: 'white', 
               border: 'none', 
               borderRadius: '50px', 
               fontSize: '1rem', 
               fontWeight: 700, 
-              cursor: 'pointer',
-              marginTop: '1rem'
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '1rem',
+              opacity: loading ? 0.65 : 1
             }}
           >
-            Log in
+            {loading ? 'Logging in...' : 'Log in'}
           </button>
 
         </form>
       </div>
+      
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
