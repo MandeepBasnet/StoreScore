@@ -1,11 +1,14 @@
-import { LayoutDashboard, Target, LogOut, Store } from 'lucide-react';
+import { LayoutDashboard, Target, LogOut, Store, SlidersHorizontal } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clearAuth } from '../../utils/auth';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const navItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Target, label: 'KPI Entry', path: '/kpi' },
+    { icon: SlidersHorizontal, label: 'Set Targets', path: '/set-targets' },
+    { icon: Store, label: 'Add Manager', path: '/add-manager' },
   ];
 
   const handleSignOut = () => {

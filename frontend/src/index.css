@@ -4,11 +4,11 @@
   --bg-card: #ffffff; /* White Cards */
   --bg-card-glass: rgba(255, 255, 255, 0.8);
   
-  --primary: #2563eb; /* Slightly darker blue for contrast on white */
-  --primary-glow: rgba(37, 99, 235, 0.2);
-  --accent: #7c3aed;
+  --primary: #0056b3; /* Strong Corporate Blue */
+  --primary-glow: rgba(0, 86, 179, 0.2);
+  --accent: #FFC72C; /* McDonald's/Corporate Yellow */
   --success: #059669;
-  --warning: #d97706;
+  --warning: #f59e0b;
   --danger: #dc2626;
 
   --text-main: #0f172a; /* Slate 900 */

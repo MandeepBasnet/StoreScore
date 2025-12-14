@@ -82,7 +82,7 @@ const EntryModal = ({ day, onSubmit }) => {
   return (
     <div style={cardStyle}>
       <div style={{ marginBottom: '1rem' }}>
-        <h3 style={{fontSize: '1.2rem', fontWeight: '700'}}>Drive Thru Metrics:</h3>
+        <h3 style={{fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-muted)'}}>Daily Score Entry</h3>
         <h1 style={{fontSize: '2rem', fontWeight: '800', margin: '0.5rem 0', color: 'black'}}>
           {day?.date?.toUpperCase() || 'TODAY'}
         </h1>

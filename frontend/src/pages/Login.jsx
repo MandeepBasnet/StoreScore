@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { login as loginAPI } from '../api/auth';
-import { saveAuth, clearAuth } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +10,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -29,15 +29,7 @@ const Login = () => {
     setLoading(true);
     
     try {
-      clearAuth();
-      
-      const data = await loginAPI(username, password);
-      
-      if (!data?.token) {
-        throw new Error('Login succeeded but no token was returned.');
-      }
-      
-      saveAuth(data.token, data.user || null);
+      await login(username, password);
       navigate('/kpi', { replace: true });
     } catch (err) {
       const message = err.response?.data?.message || err.message || 'Login failed. Please try again.';
@@ -208,7 +200,7 @@ const Login = () => {
               fontSize: '1rem', 
               fontWeight: 700, 
               cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: '1rem',
+              marginTop: '1rem', 
               opacity: loading ? 0.65 : 1
             }}
           >
@@ -229,3 +221,4 @@ const Login = () => {
 };
 
 export default Login;
+
