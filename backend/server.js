@@ -52,7 +52,10 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 const apiRoutes = require('./routes');
+const managerRoutes = require('./routes/managerRoutes');
+
 app.use('/api', apiRoutes);
+app.use('/api/managers', managerRoutes); // Dedicated Manager/Admin routes
 
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {

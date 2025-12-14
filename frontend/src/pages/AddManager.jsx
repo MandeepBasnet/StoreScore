@@ -1,5 +1,6 @@
 import { useState } from 'react';
-// import { AppwriteService } from '../services/appwrite'; // Will use when connected
+import axios from 'axios';
+import { Eye, EyeOff } from 'lucide-react';
 
 const AddManager = () => {
   const [formData, setFormData] = useState({
@@ -11,8 +12,10 @@ const AddManager = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  const stores = [ // Mock stores for now
+  const stores = [ // Mock stores for now - ideally fetch from backend too
     { id: 'store1', name: 'Downtown Toronto' },
     { id: 'store2', name: 'North York' }
   ];
@@ -20,13 +23,20 @@ const AddManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call to invite manager
-    setTimeout(() => {
-        console.log('Inviting manager:', formData);
-        setMessage('Manager invited successfully! (Mock)');
-        setLoading(false);
+    setMessage('');
+    setError('');
+
+    try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const response = await axios.post(`${apiBaseUrl}/managers`, formData);
+        setMessage('Manager created successfully! username: ' + formData.username);
         setFormData({ name: '', username: '', password: '', phone: '', storeId: '' });
-    }, 1000);
+    } catch (err) {
+        console.error("Error creating manager:", err);
+        setError(err.response?.data?.error || 'Failed to create manager');
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
@@ -36,6 +46,12 @@ const AddManager = () => {
       {message && (
           <div style={{ padding: '1rem', marginBottom: '1rem', background: '#dcfce7', color: '#166534', borderRadius: '8px' }}>
               {message}
+          </div>
+      )}
+
+      {error && (
+          <div style={{ padding: '1rem', marginBottom: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px' }}>
+              {error}
           </div>
       )}
 
@@ -64,13 +80,31 @@ const AddManager = () => {
 
         <div>
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Password</label>
-          <input
-            type="password"
-            required
-            value={formData.password}
-            onChange={(e) => setFormData({...formData, password: e.target.value})}
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ccc' }}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                style={{ width: '100%', padding: '0.75rem', paddingRight: '2.5rem', borderRadius: '8px', border: '1px solid #ccc' }}
+            />
+            <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                    position: 'absolute',
+                    right: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#666'
+                }}
+            >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
         </div>
 
         <div>
