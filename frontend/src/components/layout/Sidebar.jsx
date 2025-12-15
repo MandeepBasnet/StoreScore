@@ -1,15 +1,22 @@
 import { LayoutDashboard, Target, LogOut, Store, SlidersHorizontal } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clearAuth } from '../../utils/auth';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Target, label: 'KPI Entry', path: '/kpi' },
-    { icon: SlidersHorizontal, label: 'Set Targets', path: '/set-targets' },
-    { icon: Store, label: 'Add Manager', path: '/add-manager' },
+  const { user } = useAuth();
+  
+  const allNavItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'manager'] },
+    { icon: Target, label: 'KPI Entry', path: '/kpi', roles: ['admin', 'manager'] },
+    { icon: SlidersHorizontal, label: 'Set Targets', path: '/set-targets', roles: ['admin'] },
+    { icon: Store, label: 'Add Manager', path: '/add-manager', roles: ['admin'] },
   ];
+
+  const navItems = allNavItems.filter(item => 
+    user && item.roles.includes(user.role)
+  );
 
   const handleSignOut = () => {
     clearAuth();

@@ -51,8 +51,14 @@ export const AuthProvider = ({ children }) => {
             const data = await loginAPI(username, password);
             
             if (data?.token) {
-                saveAuth(data.token, data.user || { username, role: 'admin' });
-                setUser(data.user || { username, role: 'admin' });
+                // [Fix] Explicitly inject role: 'admin' since backend doesn't provide it
+                const adminUser = { 
+                    ...(data.user || { username }), 
+                    role: 'admin' 
+                };
+                
+                saveAuth(data.token, adminUser);
+                setUser(adminUser);
                 return data; 
             }
         } catch (backendError) {
