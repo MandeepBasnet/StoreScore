@@ -71,22 +71,27 @@ export const AuthProvider = ({ children }) => {
          try {
             console.log("Attempting Appwrite Login (Manager)...");
             
-            // [Fix] Clear any existing session first to avoid "session already exists" error
-            try {
-                await account.deleteSession('current');
-                console.log("[DEBUG] Cleared lingering session.");
-            } catch (ignored) {
-                // It's fine if there was no session to delete
-            }
-
             // Construct the fake email
             const email = `${username}@storescore.local`;
-            
-            // [DEBUG] Print the exact email being used
             console.log(`[DEBUG] Attempting login with Email: "${email}"`);
             
-            // Create session
-            await account.createEmailPasswordSession(email, password);
+            // Try to create session directly
+            try {
+                await account.createEmailPasswordSession(email, password);
+            } catch (sessionError) {
+                // If session already exists, clear it and retry
+                if (sessionError.code === 401 || sessionError.type === 'user_session_already_exists') {
+                    console.log("[DEBUG] Session exists, clearing and retrying...");
+                    try {
+                        await account.deleteSession('current');
+                        await account.createEmailPasswordSession(email, password);
+                    } catch (retryError) {
+                         throw  retryError;
+                    }
+                } else {
+                    throw sessionError;
+                }
+            }
             
             // Fetch User Details to get the ID/Name
             const appwriteUser = await account.get();
