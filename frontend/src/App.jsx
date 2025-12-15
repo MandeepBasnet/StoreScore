@@ -17,21 +17,21 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute allowedRoles={['admin', 'manager']}><Layout /></ProtectedRoute>}>
+          <Route path="/" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="kpi" element={<KPIEntry />} />
             <Route path="set-targets" element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
                 <SetTargets />
               </ProtectedRoute>
             } />
             <Route path="add-manager" element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
                 <AddManager />
               </ProtectedRoute>
             } />
             <Route path="add-store" element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['super_admin']}>
                 <AddStore />
               </ProtectedRoute>
             } />

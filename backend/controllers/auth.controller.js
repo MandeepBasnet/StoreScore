@@ -26,12 +26,21 @@ const login = async (req, res) => {
       });
     }
     
+    // Determine Role
+    // 1 = System Admin (Super Admin)
+    // 3 = User (Admin)
+    const userTypeId = authResult.user.userTypeId;
+    const role = userTypeId === 1 ? 'super_admin' : 'admin';
+
+    console.log(`[Login] Role assigned: ${role} (UserType: ${userTypeId})`);
+
     // Generate JWT token
     const token = jwt.sign(
       {
         id: authResult.user.userId || username,
         username: authResult.user.userName || username,
-        email: authResult.user.email || username
+        email: authResult.user.email || username,
+        role: role
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
@@ -42,7 +51,8 @@ const login = async (req, res) => {
       user: {
         username: authResult.user.userName || username,
         email: authResult.user.email || username,
-        userId: authResult.user.userId || null
+        userId: authResult.user.userId || null,
+        role: role
       }
     });
   } catch (err) {

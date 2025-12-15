@@ -51,10 +51,10 @@ export const AuthProvider = ({ children }) => {
             const data = await loginAPI(username, password);
             
             if (data?.token) {
-                // [Fix] Explicitly inject role: 'admin' since backend doesn't provide it
+                // Use the role returned from the backend (admin or super_admin)
                 const adminUser = { 
                     ...(data.user || { username }), 
-                    role: 'admin' 
+                    role: data.user?.role || 'admin' // Fallback to admin if undefined
                 };
                 
                 saveAuth(data.token, adminUser);

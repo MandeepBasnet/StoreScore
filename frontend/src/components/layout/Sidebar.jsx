@@ -8,11 +8,11 @@ const Sidebar = () => {
   const { user } = useAuth();
   
   const allNavItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'manager'] },
-    { icon: Target, label: 'KPI Entry', path: '/kpi', roles: ['admin', 'manager'] },
-    { icon: SlidersHorizontal, label: 'Set Targets', path: '/set-targets', roles: ['admin'] },
-    { icon: Store, label: 'Add Store', path: '/add-store', roles: ['admin'] },
-    { icon: Store, label: 'Add Manager', path: '/add-manager', roles: ['admin'] },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['super_admin', 'admin', 'manager'] },
+    { icon: Target, label: 'KPI Entry', path: '/kpi', roles: ['super_admin', 'admin', 'manager'] },
+    { icon: SlidersHorizontal, label: 'Set Targets', path: '/set-targets', roles: ['super_admin', 'admin'] },
+    { icon: Store, label: 'Add Store', path: '/add-store', roles: ['super_admin'] },
+    { icon: Store, label: 'Add Manager', path: '/add-manager', roles: ['super_admin', 'admin'] },
   ];
 
   const navItems = allNavItems.filter(item => 
