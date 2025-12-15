@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import KPIEntry from './pages/KPIEntry';
 import AddManager from './pages/AddManager';
 import SetTargets from './pages/SetTargets';
+import AddStore from './pages/AddStore';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -27,6 +28,11 @@ function App() {
             <Route path="add-manager" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AddManager />
+              </ProtectedRoute>
+            } />
+            <Route path="add-store" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AddStore />
               </ProtectedRoute>
             } />
           </Route>

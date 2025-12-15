@@ -12,12 +12,17 @@ const login = async (req, res) => {
       });
     }
     
+    console.log(`[Login] Attempting login for user: ${username}`);
+    
     // Authenticate with Xibo API
     const authResult = await authenticateUser(username, password);
     
+    console.log(`[Login] Xibo Auth Result for ${username}:`, JSON.stringify(authResult, null, 2));
+
     if (!authResult.success) {
       return res.status(401).json({
-        message: authResult.message || 'Invalid credentials'
+        message: authResult.message || 'Invalid credentials',
+        details: authResult
       });
     }
     

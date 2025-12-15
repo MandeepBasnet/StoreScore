@@ -11,6 +11,7 @@ const Sidebar = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'manager'] },
     { icon: Target, label: 'KPI Entry', path: '/kpi', roles: ['admin', 'manager'] },
     { icon: SlidersHorizontal, label: 'Set Targets', path: '/set-targets', roles: ['admin'] },
+    { icon: Store, label: 'Add Store', path: '/add-store', roles: ['admin'] },
     { icon: Store, label: 'Add Manager', path: '/add-manager', roles: ['admin'] },
   ];
 

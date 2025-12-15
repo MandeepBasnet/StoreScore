@@ -9,6 +9,9 @@ const performanceRoutes = require('./performance.routes');
 // Mount routes
 router.use('/auth', authRoutes);
 router.use('/kpi', kpiRoutes);
+router.use('/kpi', kpiRoutes);
 router.use('/performance', performanceRoutes);
+router.use('/xibo', require('./xibo.routes'));
+router.use('/stores', require('./store.routes'));
 
 module.exports = router;
