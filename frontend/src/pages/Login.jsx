@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+  const [activeTab, setActiveTab] = useState('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,7 @@ const Login = () => {
     setLoading(true);
     
     try {
-      await login(username, password);
+      await login(username, password, activeTab);
       navigate('/kpi', { replace: true });
     } catch (err) {
       const message = err.response?.data?.message || err.message || 'Login failed. Please try again.';
@@ -87,14 +88,66 @@ const Login = () => {
       )}
       
       {/* Logo Section */}
-      <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
         <img src="/logo.png" alt="StoreScore" style={{ height: '60px', objectFit: 'contain' }} />
       </div>
 
       {/* Login Form Container */}
       <div style={{ width: '100%', maxWidth: '400px', padding: '0 2rem' }}>
         
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '3rem', color: 'black' }}>Log in.</h1>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '2rem', color: 'black', textAlign: 'center' }}>Log in.</h1>
+
+        {/* Tabs */}
+        <div style={{ 
+          display: 'flex', 
+          background: '#f1f5f9', 
+          padding: '4px', 
+          borderRadius: '12px', 
+          marginBottom: '2rem' 
+        }}>
+          <button
+            onClick={() => {
+              setActiveTab('admin');
+              setError('');
+            }}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: activeTab === 'admin' ? 'white' : 'transparent',
+              color: activeTab === 'admin' ? 'black' : '#64748b',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              boxShadow: activeTab === 'admin' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Admin
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('manager');
+              setError('');
+            }}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: activeTab === 'manager' ? 'white' : 'transparent',
+              color: activeTab === 'manager' ? 'black' : '#64748b',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              boxShadow: activeTab === 'manager' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Manager
+          </button>
+        </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
@@ -204,7 +257,7 @@ const Login = () => {
               opacity: loading ? 0.65 : 1
             }}
           >
-            {loading ? 'Logging in...' : 'Log in'}
+            {loading ? 'Logging in...' : `Log in as ${activeTab === 'admin' ? 'Admin' : 'Manager'}`}
           </button>
 
         </form>

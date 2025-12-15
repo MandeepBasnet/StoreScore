@@ -64,6 +64,9 @@ export function isTokenValid() {
   const token = getStoredToken();
   if (!token) return false;
   
+  // [Fix] Allow Appwrite session token to bypass JWT validation
+  if (token === 'appwrite-session') return true;
+
   const payload = decodeJwt(token);
   if (!payload) {
     clearAuth();

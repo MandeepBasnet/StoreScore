@@ -43,53 +43,75 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (username, password) => {
-    // 1. Try Xibo / Backend Login First
-    try {
-      console.log("Attempting Xibo Login...");
-      const data = await loginAPI(username, password);
-      // If success, logic continues here
-      if (data?.token) {
-        saveAuth(data.token, data.user || { username, role: 'admin' });
-        setUser(data.user || { username, role: 'admin' });
-        return data; 
-      }
-    } catch (backendError) {
-      console.log("Backend Login failed, trying Appwrite...", backendError);
-      
-      // 2. Fallback to Appwrite Login (Store Managers)
-      try {
-        // Construct the fake email
-        const email = `${username}@storescore.local`;
-        
-        // Create session
-        await account.createEmailPasswordSession(email, password);
-        
-        // Fetch User Details to get the ID/Name
-        const appwriteUser = await account.get();
-        
-        // Define a "Manager" user object
-        const managerUser = {
-            id: appwriteUser.$id,
-            username: username,
-            name: appwriteUser.name,
-            role: 'manager', 
-            isAdmin: false
-        };
+  const login = async (username, password, type = 'admin') => {
+    // 1. Admin Login (Xibo / Backend)
+    if (type === 'admin') {
+        try {
+            console.log("Attempting Xibo Login (Admin)...");
+            const data = await loginAPI(username, password);
+            
+            if (data?.token) {
+                saveAuth(data.token, data.user || { username, role: 'admin' });
+                setUser(data.user || { username, role: 'admin' });
+                return data; 
+            }
+        } catch (backendError) {
+             console.error("Xibo Login failed:", backendError);
+             throw new Error('Invalid Admin credentials');
+        }
+    } 
+    // 2. Manager Login (Appwrite)
+    else if (type === 'manager') {
+         try {
+            console.log("Attempting Appwrite Login (Manager)...");
+            
+            // [Fix] Clear any existing session first to avoid "session already exists" error
+            try {
+                await account.deleteSession('current');
+                console.log("[DEBUG] Cleared lingering session.");
+            } catch (ignored) {
+                // It's fine if there was no session to delete
+            }
 
-        // Save mock token (or Appwrite session ID) to local storage to persist session
-        // Note: Appwrite SDK handles its own persistence, but we use localStorage for app state 
-        saveAuth('appwrite-session', managerUser);
-        setUser(managerUser);
-        
-        return { user: managerUser };
+            // Construct the fake email
+            const email = `${username}@storescore.local`;
+            
+            // [DEBUG] Print the exact email being used
+            console.log(`[DEBUG] Attempting login with Email: "${email}"`);
+            
+            // Create session
+            await account.createEmailPasswordSession(email, password);
+            
+            // Fetch User Details to get the ID/Name
+            const appwriteUser = await account.get();
+            
+            // Define a "Manager" user object
+            const managerUser = {
+                id: appwriteUser.$id,
+                username: username,
+                name: appwriteUser.name,
+                role: 'manager', 
+                isAdmin: false
+            };
 
-      } catch (appwriteError) {
-         console.error("Appwrite Login failed:", appwriteError);
-         // Throw the original error or a generic one? 
-         // Let's throw a combined message or just "Invalid credentials"
-         throw new Error('Invalid username or password (checked both systems)');
-      }
+            // Save mock token (or Appwrite session ID) to local storage to persist session
+            saveAuth('appwrite-session', managerUser);
+            setUser(managerUser);
+            
+            return { user: managerUser };
+
+        } catch (appwriteError) {
+             console.error("Appwrite Login failed:", appwriteError);
+             
+             // [DEBUG] Print specific error details
+             console.group("Appwrite Login Error Debug");
+             console.log("Error Code:", appwriteError.code);
+             console.log("Error Message:", appwriteError.message);
+             console.log("Error Type:", appwriteError.type);
+             console.groupEnd();
+
+             throw new Error(`Login failed: ${appwriteError.message} (Code: ${appwriteError.code})`);
+        }
     }
   };
 
