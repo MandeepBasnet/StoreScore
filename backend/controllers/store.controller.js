@@ -47,3 +47,36 @@ exports.createStore = async (req, res) => {
         res.status(500).json({ error: `Failed to create store: ${error.message}` });
     }
 };
+
+exports.assignOwner = async (req, res) => {
+    try {
+        const { storeId } = req.params;
+        const { xiboUserId } = req.body; // Expecting Xibo User ID (integer)
+
+        if (!storeId || !xiboUserId) {
+            return res.status(400).json({ error: 'Store ID and Xibo User ID are required' });
+        }
+
+        const databaseId = process.env.APPWRITE_DATABASE_ID;
+        const collectionId = process.env.APPWRITE_COLLECTION_STORES;
+
+        // Update the store document
+        const result = await databases.updateDocument(
+            databaseId,
+            collectionId,
+            storeId,
+            {
+                ownerXiboUserId: parseInt(xiboUserId) // Ensure it's an integer
+            }
+        );
+
+        res.json({
+            message: 'Store owner assigned successfully',
+            store: result
+        });
+
+    } catch (error) {
+        console.error("Failed to assign owner:", error);
+        res.status(500).json({ error: `Failed to assign owner: ${error.message}` });
+    }
+};

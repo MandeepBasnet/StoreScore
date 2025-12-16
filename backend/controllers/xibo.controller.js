@@ -77,3 +77,97 @@ exports.getDisplays = async (req, res) => {
         res.status(500).json({ error: "Failed to fetch displays from Xibo" });
     }
 };
+
+exports.getUsers = async (req, res) => {
+    try {
+        const params = new URLSearchParams({
+            userTypeId: 3, // Filter for Standard Users (Adjust if needed)
+            embed: 'groups'
+        });
+
+        // Fetch users from Xibo (UserType 3 = User, 1 = System Admin)
+        // We want to assign standard users as owners.
+        const response = await xiboRequest(`/user?${params.toString()}`, "GET");
+        
+        let users = [];
+        if (Array.isArray(response)) {
+            users = response;
+        } else if (response.data) {
+            users = response.data;
+        }
+
+        const formattedUsers = users.map(u => ({
+            userId: u.userId,
+            userName: u.userName,
+            fullName: u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.userName,
+            email: u.email
+        }));
+
+        res.json(formattedUsers);
+    } catch (error) {
+        console.error("Failed to fetch users:", error);
+        res.status(500).json({ error: "Failed to fetch users from Xibo" });
+    }
+};
+
+exports.getStoreSuggestions = async (req, res) => {
+    try {
+        const { storeId } = req.params;
+        const databaseId = process.env.APPWRITE_DATABASE_ID;
+        const collectionId = process.env.APPWRITE_COLLECTION_STORES;
+
+        // 1. Fetch Store to get Display IDs
+        const store = await databases.getDocument(databaseId, collectionId, storeId);
+        
+        if (!store.displayIds || store.displayIds.length === 0) {
+            return res.json({ suggestedUserIds: [], reasons: {} });
+        }
+
+        // 2. Fetch Details of these Displays from Xibo to find Owners/Permissions
+        // We can't batch fetch easily by ID in Xibo efficiently without loop or big filter
+        // So we might have to fetch all displays (cached/limited) or iterate.
+        // For simplicity/performance trade-off, let's fetch all displays again (or use a caching layer in prod).
+        // Since we did pagination in getDisplays, we might miss some if we don't fetch all.
+        // Let's assume < 1000 displays for now.
+        const displayParams = new URLSearchParams({
+            start: 0,
+            length: 1000,
+            embed: "groupsWithPermissions"
+        });
+        const xiboResponse = await xiboRequest(`/display?${displayParams.toString()}`, "GET");
+        
+        let allDisplays = [];
+        if (Array.isArray(xiboResponse)) {
+            allDisplays = xiboResponse;
+        } else if (xiboResponse.data) {
+            allDisplays = xiboResponse.data;
+        }
+
+        const storeDisplayIds = store.displayIds.map(String);
+        const storeDisplays = allDisplays.filter(d => storeDisplayIds.includes(String(d.displayId)));
+
+        const suggestedUserIds = new Set();
+        const reasons = {}; // Map userId -> Reason String
+
+        // 3. Analyze Ownership
+        storeDisplays.forEach(d => {
+            // Check direct owner
+            if (d.ownerId) {
+                suggestedUserIds.add(d.ownerId);
+                reasons[d.ownerId] = `Owns display: ${d.display}`;
+            }
+
+            // Check groups (If we had user group mapping, we could do more here)
+            // For now, Direct Ownership is the strongest signal.
+        });
+
+        res.json({
+            suggestedUserIds: Array.from(suggestedUserIds),
+            reasons
+        });
+
+    } catch (error) {
+         console.error("Failed to get suggestions:", error);
+         res.status(500).json({ error: "Failed to get suggestions" });
+    }
+};

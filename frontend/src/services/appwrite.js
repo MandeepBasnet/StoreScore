@@ -1,5 +1,7 @@
 import { account, databases, client_instance } from '../config/appwrite';
-import { ID } from 'appwrite';
+import { ID, Query } from 'appwrite';
+
+export { ID, Query, databases };
 
 export const AppwriteService = {
   // Auth
