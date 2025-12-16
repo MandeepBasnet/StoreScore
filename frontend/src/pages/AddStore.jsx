@@ -149,17 +149,22 @@ const AddStore = () => {
                                     alignItems: 'center', 
                                     padding: '0.75rem 1rem',
                                     borderBottom: '1px solid #eee',
-                                    background: 'white'
+                                    background: display.isAssigned ? '#f3f4f6' : 'white',
+                                    opacity: display.isAssigned ? 0.7 : 1
                                 }}>
                                     <input
                                         type="checkbox"
                                         id={`display-${display.id}`}
                                         checked={formData.displayIds.includes(display.id)}
                                         onChange={() => handleDisplayToggle(display.id)}
-                                        style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
+                                        disabled={display.isAssigned}
+                                        style={{ width: '1rem', height: '1rem', cursor: display.isAssigned ? 'not-allowed' : 'pointer' }}
                                     />
-                                    <label htmlFor={`display-${display.id}`} style={{ marginLeft: '0.75rem', flex: 1, cursor: 'pointer' }}>
-                                        <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{display.name}</div>
+                                    <label htmlFor={`display-${display.id}`} style={{ marginLeft: '0.75rem', flex: 1, cursor: display.isAssigned ? 'not-allowed' : 'pointer' }}>
+                                        <div style={{ fontSize: '0.875rem', fontWeight: 500, color: display.isAssigned ? '#6b7280' : 'inherit' }}>
+                                            {display.name} 
+                                            {display.isAssigned && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#dc2626', fontWeight: 'bold' }}>(Assigned to: {display.assignedStoreName})</span>}
+                                        </div>
                                         <div style={{ fontSize: '0.75rem', color: '#666' }}>
                                             Status: <span style={{ color: display.status === 'Online' ? '#166534' : '#666' }}>{display.status}</span>
                                         </div>
