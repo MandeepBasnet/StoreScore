@@ -22,6 +22,11 @@ function App() {
             <Route index element={<HomeRedirect />} />
             <Route path="kpi" element={
               <ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}>
+                <KPIEntry />
+              </ProtectedRoute>
+            } />
+            <Route path="set-targets" element={
+              <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
                 <SetTargets />
               </ProtectedRoute>
             } />
