@@ -178,11 +178,11 @@ const authenticateUser = async (username, password) => {
     // Get application access token
     const appToken = await getAccessToken();
 
-    // Search for user by username/email
+    // Search for user by userName
     // Xibo API: GET /user with filter parameters
     let userSearchResponse;
     try {
-      // Try with userName parameter
+      console.log(`[authenticateUser] Searching for user: ${username}`);
       userSearchResponse = await axios.get(`${apiUrl}/user`, {
         headers: {
           Authorization: `Bearer ${appToken}`,
@@ -192,16 +192,11 @@ const authenticateUser = async (username, password) => {
         },
       });
     } catch (error) {
-      // If that fails, try without parameters to get all users
-      console.warn(
-        "User search with params failed, trying without params:",
-        error.response?.status
-      );
-      userSearchResponse = await axios.get(`${apiUrl}/user`, {
-        headers: {
-          Authorization: `Bearer ${appToken}`,
-        },
-      });
+       console.error(`[authenticateUser] Search failed for ${username}: ${error.message}`);
+       return {
+         success: false,
+         message: "User lookup failed in Xibo",
+       };
     }
 
     // Handle different response formats
@@ -213,30 +208,32 @@ const authenticateUser = async (username, password) => {
         ? userSearchResponse.data.data
         : [userSearchResponse.data.data];
     } else if (userSearchResponse.data) {
+      // Single object response
       users = [userSearchResponse.data];
     }
 
-    // Find matching user (case-insensitive)
+    // Since we filtered by userName in the API call, any result here should be our user.
+    // But strict check just in case API returns fuzzy matches.
     const user = users.find(
       (u) =>
         u.userName === username ||
         u.email === username ||
-        u.userName?.toLowerCase() === username?.toLowerCase() ||
-        u.email?.toLowerCase() === username?.toLowerCase()
+        u.userName?.toLowerCase() === username?.toLowerCase()
     );
 
-    console.log(`[authenticateUser] Searching for user: ${username}`);
     if (!user) {
-      console.warn(`[authenticateUser] User '${username}' not found in Xibo.`);
+      console.warn(`[authenticateUser] User '${username}' not found in Xibo response.`);
       return {
         success: false,
         message: "User not found in Xibo CMS",
       };
     }
-    console.log(`[authenticateUser] User found: ${user.userName}`);
+    console.log(`[authenticateUser] User found: ${user.userName} (ID: ${user.userId})`);
 
-    // Note: We accept the login if the user exists, as we can't verify password via API 
-    // without user specific token grant which Xibo might not support nicely here.
+    // Note: Xibo Client Credentials flow does NOT verify user password. 
+    // We are verifying existence and role only.
+    // PROD TODO: Integrate true Xibo User Auth if available or use LDAP/SSO.
+    
     return {
       success: true,
       access_token: appToken,

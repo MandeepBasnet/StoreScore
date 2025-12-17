@@ -15,7 +15,7 @@ const Sidebar = () => {
     { icon: Store, label: 'Add Manager', path: '/add-manager', roles: ['super_admin', 'admin'] },
   ];
 
-  const navItems = allNavItems.filter(item => 
+  const navItems = menuItems.filter(item => 
     user && item.roles.includes(user.role)
   );
 
