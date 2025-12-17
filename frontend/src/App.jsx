@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
+import HomeRedirect from './components/HomeRedirect';
 import Inventory from './pages/Inventory';
 import Performance from './pages/Performance';
 import Login from './pages/Login';
@@ -19,10 +19,9 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><Layout /></ProtectedRoute>}>
-            <Route index element={<Dashboard />} />
-            <Route path="kpi" element={<KPIEntry />} />
-            <Route path="set-targets" element={
-              <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
+            <Route index element={<HomeRedirect />} />
+            <Route path="kpi" element={
+              <ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}>
                 <SetTargets />
               </ProtectedRoute>
             } />
