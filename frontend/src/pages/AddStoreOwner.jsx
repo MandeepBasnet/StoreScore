@@ -40,22 +40,26 @@ const AddStoreOwner = () => {
             const token = localStorage.getItem('token');
             const headers = { 'Authorization': `Bearer ${token}` };
 
-            // 1. Fetch Stores from Appwrite
-            const storesResponse = await databases.listDocuments(
-                import.meta.env.VITE_APPWRITE_DATABASE_ID,
-                import.meta.env.VITE_APPWRITE_COLLECTION_STORES,
-                [Query.limit(100)]
-            );
+            // Fetch Stores, Users, and Displays in parallel
+            const [storesResponse, usersResponse, displaysResponse] = await Promise.all([
+                databases.listDocuments(
+                    import.meta.env.VITE_APPWRITE_DATABASE_ID,
+                    import.meta.env.VITE_APPWRITE_COLLECTION_STORES,
+                    [Query.limit(100)]
+                ),
+                fetch(`${import.meta.env.VITE_API_BASE_URL}/xibo/users`, { headers }),
+                fetch(`${import.meta.env.VITE_API_BASE_URL}/xibo/displays`, { headers })
+            ]);
+
+            // Process Stores
             setStores(storesResponse.documents);
 
-            // 2. Fetch Users from Xibo
-            const usersResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/xibo/users`, { headers });
+            // Process Users
             if (!usersResponse.ok) throw new Error('Failed to fetch users');
             const usersData = await usersResponse.json();
             setUsers(usersData);
 
-            // 3. Fetch Displays from Xibo (to resolve names)
-            const displaysResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/xibo/displays`, { headers });
+            // Process Displays
             if (!displaysResponse.ok) throw new Error('Failed to fetch displays');
             const displaysData = await displaysResponse.json();
             setDisplays(displaysData);

@@ -2,25 +2,44 @@ const { xiboRequest } = require('../utils/xiboClient');
 const { databases } = require('../config/appwrite');
 const { Query } = require('node-appwrite');
 
+// Simple In-Memory Cache
+const cache = {
+  displays: { data: null, timestamp: 0 },
+  users: { data: null, timestamp: 0 }
+};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 Minutes
+
 exports.getDisplays = async (req, res) => {
     try {
-        // 1. Fetch All Displays from Xibo
-        const params = new URLSearchParams({
-            start: 0,
-            length: 1000,
-            embed: "status,currentLayout,displayGroup", 
-        });
-
-        const xiboResponse = await xiboRequest(
-            `/display?${params.toString()}`, 
-            "GET"
-        );
-
         let xiboDisplays = [];
-        if (Array.isArray(xiboResponse)) {
-            xiboDisplays = xiboResponse;
-        } else if (xiboResponse.data) {
-            xiboDisplays = xiboResponse.data;
+
+        // Check Cache
+        const now = Date.now();
+        if (cache.displays.data && (now - cache.displays.timestamp < CACHE_DURATION)) {
+            console.log("Serving Displays from Cache");
+            xiboDisplays = cache.displays.data;
+        } else {
+            // 1. Fetch All Displays from Xibo
+            console.log("Fetching Displays from Xibo...");
+            const params = new URLSearchParams({
+                start: 0,
+                length: 1000,
+                embed: "status,currentLayout,displayGroup", 
+            });
+
+            const xiboResponse = await xiboRequest(
+                `/display?${params.toString()}`, 
+                "GET"
+            );
+
+            if (Array.isArray(xiboResponse)) {
+                xiboDisplays = xiboResponse;
+            } else if (xiboResponse.data) {
+                xiboDisplays = xiboResponse.data;
+            }
+
+            // Update Cache
+            cache.displays = { data: xiboDisplays, timestamp: now };
         }
 
         // 2. Fetch All Stores from Appwrite to check valid assignments
@@ -29,8 +48,6 @@ exports.getDisplays = async (req, res) => {
 
         let allStores = [];
         try {
-            // Fetch all stores (pagination might be needed if > 25, default limit is usually 25)
-            // For now, we assume < 100 stores or increase limit.
             const storesResponse = await databases.listDocuments(
                 databaseId,
                 collectionId,
@@ -39,12 +56,9 @@ exports.getDisplays = async (req, res) => {
             allStores = storesResponse.documents;
         } catch (dbError) {
             console.error("Failed to fetch stores for cross-reference:", dbError);
-            // Continue without assignment info if DB fails, or handle as critical error?
-            // Safer to continue so at least displays show up.
         }
 
         // 3. Create a Map of Assigned Display IDs
-        // Map: DisplayID (string) -> StoreName (string)
         const assignedDisplayMap = {};
         allStores.forEach(store => {
             if (store.displayIds && Array.isArray(store.displayIds)) {
@@ -54,7 +68,7 @@ exports.getDisplays = async (req, res) => {
             }
         });
 
-        // 4. Map to a simplified format for the frontend, adding assignment info
+        // 4. Map to a simplified format
         const formattedDisplays = xiboDisplays.map(d => {
             const displayIdStr = String(d.displayId);
             const isAssigned = !!assignedDisplayMap[displayIdStr];
@@ -80,20 +94,30 @@ exports.getDisplays = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
     try {
-        const params = new URLSearchParams({
-            userTypeId: 3, // Filter for Standard Users (Adjust if needed)
-            embed: 'groups'
-        });
-
-        // Fetch users from Xibo (UserType 3 = User, 1 = System Admin)
-        // We want to assign standard users as owners.
-        const response = await xiboRequest(`/user?${params.toString()}`, "GET");
-        
         let users = [];
-        if (Array.isArray(response)) {
-            users = response;
-        } else if (response.data) {
-            users = response.data;
+        
+        // Check Cache
+        const now = Date.now();
+        if (cache.users.data && (now - cache.users.timestamp < CACHE_DURATION)) {
+             console.log("Serving Users from Cache");
+             users = cache.users.data;
+        } else {
+            console.log("Fetching Users from Xibo...");
+            const params = new URLSearchParams({
+                userTypeId: 3, 
+                embed: 'groups'
+            });
+
+            const response = await xiboRequest(`/user?${params.toString()}`, "GET");
+            
+            if (Array.isArray(response)) {
+                users = response;
+            } else if (response.data) {
+                users = response.data;
+            }
+            
+            // Update Cache
+            cache.users = { data: users, timestamp: now };
         }
 
         const formattedUsers = users.map(u => ({
