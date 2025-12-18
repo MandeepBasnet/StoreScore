@@ -6,6 +6,16 @@ import { useAuth } from '../../context/AuthContext';
 const Sidebar = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Get portal label based on role
+  const getPortalLabel = () => {
+    switch (user?.role) {
+      case 'super_admin': return 'Super Admin Portal';
+      case 'admin': return 'Admin Portal';
+      case 'manager': return 'Manager Portal';
+      default: return 'Portal';
+    }
+  };
   
   const menuItems = [
     { icon: Target, label: 'KPI Entry', path: '/kpi', roles: ['super_admin', 'admin', 'manager'] },
@@ -42,7 +52,7 @@ const Sidebar = () => {
         </div>
         <div>
           <h2 style={{ fontSize: '1.25rem', lineHeight: '1' }}>StoreScore</h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Manager Portal</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{getPortalLabel()}</span>
         </div>
       </div>
 

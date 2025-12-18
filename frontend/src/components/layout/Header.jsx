@@ -1,9 +1,27 @@
-import { Bell, Search, User, Menu } from 'lucide-react';
+import { Search, User } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Header = () => {
+  const { user } = useAuth();
+
+  // Get display role label based on user role
+  const getRoleLabel = () => {
+    switch (user?.role) {
+      case 'super_admin': return 'Super Admin';
+      case 'admin': return 'Store Admin';
+      case 'manager': return 'Store Manager';
+      default: return 'User';
+    }
+  };
+
+  // Get display name
+  const getDisplayName = () => {
+    return user?.name || user?.username || 'User';
+  };
+
   return (
     <header className="header glass-panel" style={{
-      margin: '1rem 1rem 1rem 0', // Right margin for symmetry
+      margin: '1rem 1rem 1rem 0',
       padding: '1rem 2rem',
       display: 'flex',
       alignItems: 'center',
@@ -35,23 +53,10 @@ const Header = () => {
       </div>
 
       <div className="actions" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        <div style={{ position: 'relative', cursor: 'pointer' }}>
-          <Bell size={20} color="var(--text-main)" />
-          <span style={{
-            position: 'absolute',
-            top: '-2px',
-            right: '-1px',
-            width: '8px',
-            height: '8px',
-            background: 'var(--danger)',
-            borderRadius: '50%'
-          }}></span>
-        </div>
-        
         <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Alex Morgan</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Store Manager</p>
+            <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>{getDisplayName()}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{getRoleLabel()}</p>
           </div>
           <div style={{
             width: '40px',
@@ -71,3 +76,4 @@ const Header = () => {
 };
 
 export default Header;
+
