@@ -1,5 +1,7 @@
 const axios = require("axios");
 const FormData = require("form-data");
+const { wrapper } = require("axios-cookiejar-support");
+const { CookieJar } = require("tough-cookie");
 
 // Resolve configuration with fallbacks
 const apiUrl = process.env.XIBO_API_URL || process.env.API_BASE_URL;
@@ -49,7 +51,14 @@ const getAccessToken = async () => {
     );
     console.log(`[xiboClient] ✓ Authentication successful`);
     token = res.data.access_token;
-    setTimeout(() => (token = null), res.data.expires_in * 900);
+    
+    // Clear token 90% through expiry time for safety
+    const expiryMs = (res.data.expires_in || 3600) * 1000 * 0.9;
+    setTimeout(() => {
+      console.log('[xiboClient] Token expired, will refresh on next request');
+      token = null;
+    }, expiryMs);
+    
     return token;
   } catch (error) {
     // Handle network/DNS errors
@@ -172,17 +181,102 @@ const xiboRequest = async (
   }
 };
 
+// Helper to verify Xibo password by simulating a browser login
+const verifyXiboPassword = async (username, password) => {
+  try {
+    // 1. Setup Cookie Jar
+    const jar = new CookieJar();
+    const client = wrapper(axios.create({ jar }));
+    
+    // Determine Login URL
+    // If API URL is https://app.storescore.io/api, Login URL is likely https://app.storescore.io/login
+    // We strip '/api' suffix if present
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+    const loginUrl = `${baseUrl}/login`;
+
+    console.log(`[verifyXiboPassword] Verifying against: ${loginUrl}`);
+
+    // 2. Fetch Login Page (Get CSRF Token)
+    console.log(`[verifyXiboPassword] Step 1: Fetching login page...`);
+    const getRes = await client.get(loginUrl, {
+      timeout: 10000 // 10s timeout
+    });
+
+    // Extract CSRF Token using Regex
+    // Looking for: name="csrfToken" value="xyz" (or single quotes)
+    const tokenMatch = getRes.data.match(/name=["']csrfToken["'][^>]*value=["']([^"']+)["']/);
+    
+    if (!tokenMatch || !tokenMatch[1]) {
+      console.error("[verifyXiboPassword] Failed to extract CSRF token from login page");
+      return { success: false, error: "CSRF token extraction failed" };
+    }
+    
+    const csrfToken = tokenMatch[1];
+    // console.log(`[verifyXiboPassword] CSRF Token extracted: ${csrfToken.substring(0, 10)}...`);
+
+    // 3. Submit Credentials
+    console.log(`[verifyXiboPassword] Step 2: Submitting credentials...`);
+    const params = new URLSearchParams();
+    params.append('csrfToken', csrfToken);
+    params.append('username', username);
+    params.append('password', password);
+
+    const postRes = await client.post(loginUrl, params, { 
+      maxRedirects: 0, // Stop at redirect to check location
+      validateStatus: (status) => status >= 200 && status < 400, // Accept 302 as valid
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+    // 4. Validate Redirect
+    // Success: 302 Redirect AND Location is NOT back to login
+    if (postRes.status === 302) {
+      const location = postRes.headers.location;
+      console.log(`[verifyXiboPassword] Redirect Location: ${location}`);
+      
+      if (location && !location.includes('login')) {
+        console.log(`[verifyXiboPassword] ✓ Password verified successfully`);
+        return { success: true };
+      }
+    }
+    
+    // Failure: 200 OK (page re-rendered with error) or 302 back to login
+    console.warn(`[verifyXiboPassword] ✗ Verification failed (Status: ${postRes.status})`);
+    return { success: false };
+
+  } catch (error) {
+    console.error(`[verifyXiboPassword] Error: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+};
+
 // Authenticate user with Xibo credentials
+// Uses Proxy Authentication (browser simulation) to verify password
 const authenticateUser = async (username, password) => {
   try {
+    console.log(`[authenticateUser] Starting Proxy Authentication for: ${username}`);
+    
+    // 1. Verify Password against Xibo CMS
+    const verification = await verifyXiboPassword(username, password);
+    
+    if (!verification.success) {
+      console.warn(`[authenticateUser] Password verification failed for: ${username}`);
+      return {
+        success: false,
+        message: "Invalid username or password",
+      };
+    }
+    
+    // 2. If Password is valid, proceed to get User Info
     // Get application access token
     const appToken = await getAccessToken();
 
-    // Search for user by userName
-    // Xibo API: GET /user with filter parameters
+    // Search for user by userName in Xibo
     let userSearchResponse;
     try {
-      console.log(`[authenticateUser] Searching for user: ${username}`);
+      console.log(`[authenticateUser] Searching for user details: ${username}`);
       userSearchResponse = await axios.get(`${apiUrl}/user`, {
         headers: {
           Authorization: `Bearer ${appToken}`,
@@ -190,9 +284,12 @@ const authenticateUser = async (username, password) => {
         params: {
           userName: username,
         },
+        timeout: 10000 // 10 second timeout
       });
     } catch (error) {
        console.error(`[authenticateUser] Search failed for ${username}: ${error.message}`);
+       // If we verified the password but can't look up details, fail safe or provide minimal info?
+       // Failing safe is better
        return {
          success: false,
          message: "User lookup failed in Xibo",
@@ -212,8 +309,7 @@ const authenticateUser = async (username, password) => {
       users = [userSearchResponse.data];
     }
 
-    // Since we filtered by userName in the API call, any result here should be our user.
-    // But strict check just in case API returns fuzzy matches.
+    // Find exact username match
     const user = users.find(
       (u) =>
         u.userName === username ||
@@ -229,19 +325,22 @@ const authenticateUser = async (username, password) => {
       };
     }
     console.log(`[authenticateUser] User found: ${user.userName} (ID: ${user.userId})`);
-
-    // Note: Xibo Client Credentials flow does NOT verify user password. 
-    // We are verifying existence and role only.
-    // PROD TODO: Integrate true Xibo User Auth if available or use LDAP/SSO.
     
     return {
       success: true,
       access_token: appToken,
       user: user,
-      note: "Using application token",
+      note: "Password verified via Xibo Proxy Auth",
     };
   } catch (error) {
     console.error("Xibo authentication error:", error.message);
+    
+    if (error.code === 'ETIMEDOUT') {
+      return {
+        success: false,
+        message: "Authentication timeout - Xibo server is not responding",
+      };
+    }
     
     if (error.response && error.response.status === 404) {
         return {

@@ -6,6 +6,8 @@ export const login = async (username, password) => {
   const response = await axios.post(`${API_BASE_URL}/auth/login`, {
     username,
     password
+  }, {
+    timeout: 15000 // 15 second timeout to prevent hanging on slow Xibo server
   });
   return response.data;
 };

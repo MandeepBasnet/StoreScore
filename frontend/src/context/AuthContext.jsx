@@ -37,8 +37,16 @@ export const AuthProvider = ({ children }) => {
         }
       }
     } catch (error) {
+      console.error("Auth check failed:", error);
       setUser(null);
+      clearAuth(); // Fix: Clear zombie token if user resolution fails
     } finally {
+      // One final check: if we finished loading and user is null, 
+      // make sure we don't have a lingering token that tricks ProtectedRoute
+      if (!getStoredUser()) { // Use getter to check current state
+         // We might have set user(null) above, ensuring we clear storage too
+         clearAuth();
+      }
       setLoading(false);
     }
   };
