@@ -142,9 +142,21 @@ const KPIPage = () => {
     const weekCount = Math.ceil(daysInMonth / 7);
     const weeks = [];
     
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const isFutureMonth = new Date(year, month, 1) > today;
+
+    if (isFutureMonth) return [];
+
     for (let i = 1; i <= weekCount; i++) {
       const startDay = (i - 1) * 7 + 1;
       const endDay = Math.min(i * 7, daysInMonth);
+      
+      // If current month, only show weeks that have started
+      if (isCurrentMonth && startDay > today.getDate()) {
+        continue;
+      }
+
       weeks.push({
         weekNumber: i,
         label: `Week ${i}`,
@@ -287,9 +299,10 @@ const KPIPage = () => {
 
   const weekTabsContainerStyle = {
     display: 'flex',
-    gap: '0.5rem',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: '1rem',
     marginBottom: '1.5rem',
-    overflowX: 'auto',
     paddingBottom: '0.5rem'
   };
 
