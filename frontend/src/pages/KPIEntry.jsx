@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Check, Lock, ChevronRight, ChevronLeft, Store } from 'lucide-react';
 import EntryModal from '../components/kpi/EntryModal';
 import ResultModal from '../components/kpi/ResultModal';
@@ -11,6 +11,7 @@ const KPIPage = () => {
   const [days, setDays] = useState([]);
   const [streak, setStreak] = useState(0);
   const [view, setView] = useState('list');
+  const [activeWeek, setActiveWeek] = useState(1);
   const [currentDay, setCurrentDay] = useState(null);
   const [tempScore, setTempScore] = useState(null);
   
@@ -126,6 +127,40 @@ const KPIPage = () => {
     return generatedDays.reverse(); // Newest first
   };
 
+  // Calculate weeks for a given month
+  const getWeeksForMonth = (year, month) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const weekCount = Math.ceil(daysInMonth / 7);
+    const weeks = [];
+    
+    for (let i = 1; i <= weekCount; i++) {
+      const startDay = (i - 1) * 7 + 1;
+      const endDay = Math.min(i * 7, daysInMonth);
+      weeks.push({
+        weekNumber: i,
+        label: `Week ${i}`,
+        startDay,
+        endDay
+      });
+    }
+    return weeks;
+  };
+
+  // Filter days based on active week
+  const filteredDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const weeks = getWeeksForMonth(year, month);
+    const activeWeekData = weeks[activeWeek - 1];
+    
+    if (!activeWeekData) return days;
+    
+    return days.filter(day => {
+      const dayNum = parseInt(day.id.split('-')[2]);
+      return dayNum >= activeWeekData.startDay && dayNum <= activeWeekData.endDay;
+    });
+  }, [days, activeWeek, currentDate]);
+
   // Calculate streak of consecutive days meeting target
   const calculateStreak = (daysList) => {
     let streakCount = 0;
@@ -143,12 +178,14 @@ const KPIPage = () => {
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setActiveWeek(1); // Reset to Week 1
   };
 
   const handleNextMonth = () => {
     const today = new Date();
     if (currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear()) return;
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setActiveWeek(1); // Reset to Week 1
   };
 
   const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -239,6 +276,27 @@ const KPIPage = () => {
     marginBottom: '1rem'
   };
 
+  const weekTabsContainerStyle = {
+    display: 'flex',
+    gap: '0.5rem',
+    marginBottom: '1.5rem',
+    overflowX: 'auto',
+    paddingBottom: '0.5rem'
+  };
+
+  const getWeekTabStyle = (isActive) => ({
+    padding: '0.5rem 1rem',
+    borderRadius: '20px',
+    border: isActive ? 'none' : '1px solid #e2e8f0',
+    background: isActive ? '#2563eb' : 'white',
+    color: isActive ? 'white' : '#64748b',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s'
+  });
+
   if (loading && days.length === 0 && stores.length === 0) {
     return (
       <div style={containerStyle}>
@@ -305,13 +363,26 @@ const KPIPage = () => {
 
           <p style={{ color: '#64748b', marginBottom: '1rem', textAlign: 'center' }}>Select a day to enter metrics.</p>
 
+          {/* Week Tabs */}
+          <div style={weekTabsContainerStyle}>
+            {getWeeksForMonth(currentDate.getFullYear(), currentDate.getMonth()).map(week => (
+              <button
+                key={week.weekNumber}
+                onClick={() => setActiveWeek(week.weekNumber)}
+                style={getWeekTabStyle(activeWeek === week.weekNumber)}
+              >
+                {week.label}
+              </button>
+            ))}
+          </div>
+
           <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {loading ? (
               <p style={{ textAlign: 'center', color: '#94a3b8' }}>Loading entries...</p>
             ) : days.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#94a3b8' }}>No days available for this month.</p>
             ) : (
-              days.map(day => (
+              filteredDays.map(day => (
                 <div
                   key={day.id}
                   onClick={() => handleDaySelect(day)}
