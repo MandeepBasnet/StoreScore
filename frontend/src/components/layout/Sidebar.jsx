@@ -1,4 +1,4 @@
-import { Target, LogOut, Store, SlidersHorizontal, UserPlus } from 'lucide-react';
+import { Target, LogOut, Store, SlidersHorizontal, UserPlus, Folder } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clearAuth } from '../../utils/auth';
 import { useAuth } from '../../context/AuthContext';
@@ -20,6 +20,7 @@ const Sidebar = () => {
   const menuItems = [
     { icon: Target, label: 'KPI Entry', path: '/kpi', roles: ['super_admin', 'admin', 'manager'] },
     { icon: SlidersHorizontal, label: 'Set Targets', path: '/set-targets', roles: ['super_admin', 'admin'] },
+    { icon: Folder, label: 'Stores', path: '/stores', roles: ['super_admin', 'admin'] },
     { icon: Store, label: 'Add Store', path: '/add-store', roles: ['super_admin'] },
     { icon: UserPlus, label: 'Assign Owner', path: '/add-store-owner', roles: ['super_admin'] },
     { icon: Store, label: 'Add Manager', path: '/add-manager', roles: ['super_admin', 'admin'] },

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Check, Lock, ChevronRight, ChevronLeft, Store } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Calendar, Check, Lock, ChevronRight, ChevronLeft, Store, ArrowLeft } from 'lucide-react';
 import EntryModal from '../components/kpi/EntryModal';
 import ResultModal from '../components/kpi/ResultModal';
 import { AppwriteService } from '../services/appwrite';
@@ -7,6 +8,10 @@ import { useAuth } from '../context/AuthContext';
 
 const KPIPage = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
+  const urlStoreId = searchParams.get('storeId');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [days, setDays] = useState([]);
   const [streak, setStreak] = useState(0);
@@ -30,7 +35,11 @@ const KPIPage = () => {
       try {
         const storeList = await AppwriteService.getStores();
         setStores(storeList);
-        if (storeList.length > 0) {
+        
+        // If storeId in URL, select that store; otherwise select first
+        if (urlStoreId && storeList.some(s => s.$id === urlStoreId)) {
+          setSelectedStoreId(urlStoreId);
+        } else if (storeList.length > 0 && !urlStoreId) {
           setSelectedStoreId(storeList[0].$id);
         }
       } catch (err) {
@@ -41,7 +50,7 @@ const KPIPage = () => {
       }
     };
     fetchStores();
-  }, []);
+  }, [urlStoreId]);
 
   // Load KPI data when month or store changes
   useEffect(() => {
@@ -314,25 +323,61 @@ const KPIPage = () => {
       {view === 'list' && (
         <div style={listCardStyle}>
           
-          {/* Store Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <Store size={20} color="#64748b" />
-            <select 
-              value={selectedStoreId} 
-              onChange={(e) => setSelectedStoreId(e.target.value)}
-              style={storeSelectStyle}
+          {/* Back to Stores Button (if navigated from Stores page) */}
+          {urlStoreId && (
+            <button
+              onClick={() => navigate('/stores')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1rem',
+                marginBottom: '1rem',
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                color: '#3b82f6',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
             >
-              {stores.length === 0 ? (
-                <option value="">No stores available</option>
-              ) : (
-                stores.map(store => (
-                  <option key={store.$id} value={store.$id}>
-                    {store.name || store.storeName || store.$id}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+              <ArrowLeft size={16} />
+              Back to Stores
+            </button>
+          )}
+
+          {/* Store Selector (hidden if navigating from Stores page) */}
+          {!urlStoreId && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <Store size={20} color="#64748b" />
+              <select 
+                value={selectedStoreId} 
+                onChange={(e) => setSelectedStoreId(e.target.value)}
+                style={storeSelectStyle}
+              >
+                {stores.length === 0 ? (
+                  <option value="">No stores available</option>
+                ) : (
+                  stores.map(store => (
+                    <option key={store.$id} value={store.$id}>
+                      {store.name || store.storeName || store.$id}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
+
+          {/* Current Store Display (when navigating from Stores page) */}
+          {urlStoreId && selectedStoreId && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '8px' }}>
+              <Store size={20} color="#3b82f6" />
+              <span style={{ color: '#1e40af', fontWeight: '600' }}>
+                {stores.find(s => s.$id === selectedStoreId)?.name || 'Selected Store'}
+              </span>
+            </div>
+          )}
 
           {error && (
             <div style={{ 

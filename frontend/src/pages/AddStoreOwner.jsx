@@ -267,43 +267,16 @@ const AddStoreOwner = () => {
                         </div>
                     </form>
                 </div>
-
-                {/* Section 2: Current Assignments Dashboard */}
-                <div>
-                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Current Stores & Owners</h2>
-                     <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                                <tr>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: '#374151' }}>Store Name</th>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: '#374151' }}>Assigned Owner</th>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: '#374151' }}>Linked Displays</th>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: '#374151' }}>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {stores.length === 0 ? (
-                                    <tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>No stores found.</td></tr>
-                                ) : (
-                                    stores.map(store => (
-                                        <tr key={store.$id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                            <td style={{ padding: '1rem', fontWeight: '500' }}>{store.name}</td>
-                                            <td style={{ padding: '1rem' }}>{getOwnerName(store.ownerXiboUserId)}</td>
-                                            <td style={{ padding: '1rem', color: '#6b7280', fontSize: '0.9rem' }}>{getDisplayNames(store.displayIds)}</td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <button 
-                                                    onClick={() => setSelectedStoreId(store.$id)}
-                                                    style={{ color: '#2563eb', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                >
-                                                    Edit
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                     </div>
+                
+                {/* Note about Stores page */}
+                <div style={{ 
+                    padding: '1rem', 
+                    background: '#eff6ff', 
+                    borderRadius: '8px', 
+                    color: '#1e40af',
+                    fontSize: '0.9rem'
+                }}>
+                    <strong>Note:</strong> To view all stores and their details, visit the <a href="/stores" style={{ color: '#3b82f6', textDecoration: 'underline' }}>Stores page</a>.
                 </div>
             </div>
         </div>
